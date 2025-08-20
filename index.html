@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      ICP Crawl Data Viewer (ICP_crawl_20250820_053202_scored.jsonl)
+    </title>
+    <style>
+      :root {
+        --col-gap: 12px;
+        --diff-bg: #fff5c2;
+        --header-bg: #0f172a;
+        --header-fg: #ffffff;
+        --subheader-bg: #1f2937;
+        --subheader-fg: #e5e7eb;
+        --border: #e5e7eb;
+        --muted: #6b7280;
+      }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
+        margin: 16px;
+        color: #0b1020;
+      }
+      h2 {
+        margin: 0 0 12px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .controls input[type="text"] {
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        min-width: 240px;
+      }
+      .controls button {
+        padding: 6px 10px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .controls .status {
+        color: var(--muted);
+      }
+      .fallback {
+        margin: 8px 0 14px;
+        display: none;
+        gap: 8px;
+        align-items: center;
+      }
+      .fallback input[type="file"] {
+        border: 1px dashed var(--border);
+        padding: 6px;
+        border-radius: 6px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--border);
+        table-layout: auto;
+        min-width: 1400px; /* Adjusted for wider aggregated_context and rationale columns */
+      }
+      thead th {
+        background: var(--header-bg);
+        color: var(--header-fg);
+        padding: 8px 6px;
+        border-right: 1px solid #172036;
+        font-weight: 600;
+        font-size: 11px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      thead tr:nth-child(2) th {
+        background: var(--subheader-bg);
+        color: var(--subheader-fg);
+        font-weight: 500;
+        padding: 6px;
+        font-size: 10px;
+      }
+      tbody td {
+        padding: 6px 8px;
+        border-top: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        vertical-align: top;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 11px;
+        line-height: 1.3;
+      }
+      tbody tr:nth-child(even) td {
+        background: #fcfdff;
+      }
+      .domain {
+        font-weight: 600;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .diff {
+        background: var(--diff-bg);
+      }
+      .cell-small {
+        font-size: 12px;
+      }
+
+      /* Column-specific styling */
+      .col-domain {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-aggregated_context {
+        min-width: 300px;
+        max-width: 450px;
+      }
+      .col-included_urls {
+        min-width: 80px;
+        max-width: 100px;
+      }
+
+      .col-html_keywords_found {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-lead_status {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-clay_score {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-core_service {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-industry {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-classification_category {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-rationale {
+        min-width: 300px;
+        max-width: 450px;
+      }
+      .col-website_quality {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-maintenance_service {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-certifications {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-territories {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-parent_company {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-competitor_software {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-association {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-final_score {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-score_breakdown {
+        min-width: 400px;
+        max-width: 600px;
+        font-size: 10px;
+        line-height: 1.2;
+      }
+
+      .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      .rationale {
+        max-height: none; /* Remove height restriction */
+        overflow: visible; /* Show all content */
+      }
+      .sticky-header thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      .legend {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      /* Enhanced table styling */
+      .table-container {
+        position: relative;
+      }
+
+      /* Column grouping visual indicators */
+      .hubspot-header {
+        background: #3b82f6 !important;
+        color: white !important;
+      }
+
+      .ai-scoring-header {
+        background: #ff4f00 !important;
+        color: white !important;
+      }
+
+      /* Row expand/collapse functionality */
+      .expand-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 10px;
+        cursor: pointer;
+        margin-right: 4px;
+      }
+
+      .expand-btn:hover {
+        background: #2563eb;
+      }
+
+      .row-expanded td {
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+
+      .row-collapsed td {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100px !important;
+      }
+
+      .row-collapsed td.rationale,
+      .row-collapsed td.col-aggregated_context,
+      .row-collapsed td.col-score_breakdown {
+        max-width: 100px !important;
+      }
+
+      /* Hover effects for better UX */
+      tbody tr:hover {
+        background-color: #f8fafc;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Compact mode for better space utilization */
+      .compact-mode tbody td {
+        padding: 4px 6px;
+        font-size: 10px;
+      }
+
+      .compact-mode thead th {
+        padding: 6px 4px;
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>ICP Crawl Data Viewer</h2>
+    <div class="legend">
+      <div style="margin-bottom: 8px">
+        <span
+          style="
+            background: #3b82f6;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+          "
+          >Blue</span
+        >
+        <span style="margin-right: 16px">= HubSpot Data</span>
+        <span
+          style="
+            background: #ff4f00;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+          "
+          >Orange</span
+        >
+        <span>= New AI Scoring</span>
+      </div>
+      Shows selected fields from ICP_crawl_20250820_053202_scored.jsonl<br />
+      <small
+        >Table is scrollable horizontally to view all columns • Total: 21
+        columns • Use Compact Mode for better space utilization • Click ▶ to
+        expand rows</small
+      >
+    </div>
+    <div class="controls">
+      <button id="reloadBtn">Reload workspace file</button>
+      <button id="compactToggle">Toggle Compact Mode</button>
+      <label
+        >Filter domain:
+        <input type="text" id="filterInput" placeholder="e.g. example.com"
+      /></label>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="fallback" id="fallbackInputs">
+      <span class="muted">If auto-load fails, choose file manually:</span>
+      <label
+        >Updated Model (.jsonl):
+        <input
+          type="file"
+          id="fileInput"
+          accept=".jsonl,.txt,application/jsonl"
+      /></label>
+      <button id="loadFilesBtn">Load selected</button>
+    </div>
+
+    <div
+      class="table-container"
+      style="
+        max-height: 80vh;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      "
+    >
+      <table class="sticky-header" id="resultTable" aria-describedby="status">
+        <thead>
+          <tr>
+            <th style="min-width: 60px">Expand</th>
+            <th class="col-domain hubspot-header">Domain</th>
+            <th class="col-lead_status hubspot-header">Lead Status</th>
+            <th class="col-clay_score hubspot-header">Clay score</th>
+            <th class="col-core_service hubspot-header">Core service</th>
+            <th class="col-industry hubspot-header">Industry_</th>
+            <th class="col-final_score ai-scoring-header">final_score</th>
+            <th class="col-score_breakdown ai-scoring-header">
+              score_breakdown
+            </th>
+            <th class="col-aggregated_context ai-scoring-header">
+              aggregated_context
+            </th>
+            <th class="col-included_urls ai-scoring-header">included_urls</th>
+            <th class="col-html_keywords_found ai-scoring-header">
+              html_keywords_found
+            </th>
+            <th class="col-classification_category ai-scoring-header">
+              classification_category
+            </th>
+            <th class="col-rationale ai-scoring-header">rationale</th>
+            <th class="col-website_quality ai-scoring-header">
+              website_quality
+            </th>
+            <th class="col-maintenance_service ai-scoring-header">
+              mostly_does_maintenance_and_service
+            </th>
+            <th class="col-certifications ai-scoring-header">
+              has_certifications_and_compliance_standards
+            </th>
+            <th class="col-territories ai-scoring-header">
+              has_multiple_service_territories
+            </th>
+            <th class="col-parent_company ai-scoring-header">
+              has_parent_company
+            </th>
+            <th class="col-competitor_software ai-scoring-header">
+              using_competitor_software
+            </th>
+            <th class="col-association ai-scoring-header">
+              part_of_known_fire_protection_association
+            </th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const DATA_FILE = "ICP_crawl_20250820_053202_scored.jsonl";
+      const KEYS = [
+        "Lead Status",
+        "Clay score",
+        "Core service",
+        "Industry_",
+        "final_score",
+        "score_breakdown",
+        "aggregated_context",
+        "included_urls",
+        "html_keywords_found",
+        "classification_category",
+        "rationale",
+        "website_quality",
+        "mostly_does_maintenance_and_service",
+        "has_certifications_and_compliance_standards",
+        "has_multiple_service_territories",
+        "has_parent_company",
+        "using_competitor_software",
+        "part_of_known_fire_protection_association",
+      ];
+
+      const els = {
+        status: document.getElementById("status"),
+        tbody: document.getElementById("tableBody"),
+        filter: document.getElementById("filterInput"),
+        reload: document.getElementById("reloadBtn"),
+        compactToggle: document.getElementById("compactToggle"),
+        fallback: document.getElementById("fallbackInputs"),
+        fileInput: document.getElementById("fileInput"),
+        loadFilesBtn: document.getElementById("loadFilesBtn"),
+      };
+
+      function setStatus(msg) {
+        els.status.textContent = msg;
+      }
+
+      function parseJsonl(text) {
+        const lines = text.split(/\r?\n/);
+        const out = [];
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t) continue;
+          try {
+            out.push(JSON.parse(t));
+          } catch (e) {
+            // ignore malformed lines
+          }
+        }
+        return out;
+      }
+
+      function indexByDomain(rows) {
+        const map = new Map();
+        for (const row of rows) {
+          const domain = row && row.domain;
+          if (!domain) continue;
+          map.set(domain, row);
+        }
+        return map;
+      }
+
+      function normalize(val) {
+        if (val == null) return "";
+        // Don't convert objects to strings - return them as-is
+        if (typeof val === "object") {
+          return val;
+        }
+        return String(val);
+      }
+
+      function toggleRow(tr) {
+        const isExpanded = tr.classList.contains("row-expanded");
+        const expandBtn = tr.querySelector(".expand-btn");
+
+        if (isExpanded) {
+          // Collapse the row
+          tr.classList.remove("row-expanded");
+          tr.classList.add("row-collapsed");
+          expandBtn.textContent = "▶";
+          expandBtn.title = "Click to expand row";
+        } else {
+          // Expand the row
+          tr.classList.remove("row-collapsed");
+          tr.classList.add("row-expanded");
+          expandBtn.textContent = "▼";
+          expandBtn.title = "Click to collapse row";
+        }
+      }
+
+      function renderTable(rows) {
+        const filter = els.filter.value.trim().toLowerCase();
+        const frag = document.createDocumentFragment();
+
+        let shown = 0;
+        for (const row of rows) {
+          const domain = row && row.domain;
+          if (!domain) continue;
+
+          if (filter && !domain.toLowerCase().includes(filter)) continue;
+
+          const tr = document.createElement("tr");
+          tr.classList.add("row-collapsed"); // Start with collapsed state
+
+          // Add expand/collapse button
+          const tdExpand = document.createElement("td");
+          const expandBtn = document.createElement("button");
+          expandBtn.className = "expand-btn";
+          expandBtn.textContent = "▶";
+          expandBtn.title = "Click to expand row";
+          expandBtn.onclick = () => toggleRow(tr);
+          tdExpand.appendChild(expandBtn);
+          tr.appendChild(tdExpand);
+
+          const tdDomain = document.createElement("td");
+          tdDomain.className = "domain";
+          tdDomain.textContent = domain;
+          tr.appendChild(tdDomain);
+
+          for (const k of KEYS) {
+            const td = document.createElement("td");
+            const v = normalize(row[k]);
+
+            // Add column-specific classes
+            const colClass = `col-${k.replace(/[^a-zA-Z0-9]/g, "_")}`;
+            td.classList.add(colClass);
+
+            // Add special classes for different field types
+            if (k === "rationale" || k === "aggregated_context") {
+              td.classList.add("rationale");
+            }
+            if (
+              k === "score_breakdown" ||
+              k === "included_urls" ||
+              k === "html_keywords_found"
+            ) {
+              td.classList.add("cell-small");
+            }
+            if (k === "length") {
+              td.classList.add("cell-small");
+            }
+
+            // Handle special field types
+            if (k === "score_breakdown" && v && v !== "") {
+              // Create a detailed summary of the score breakdown
+              let summary = "";
+
+              // Check if v is an object and has the expected properties
+              if (v && typeof v === "object" && v.field_scores) {
+                try {
+                  const fieldScores = Object.entries(v.field_scores)
+                    .map(
+                      ([field, data]) =>
+                        `${field}: ${data.points}/${data.max_points}`
+                    )
+                    .join(", ");
+                  summary += `Fields: ${fieldScores}`;
+                } catch (e) {
+                  console.log("Error processing field_scores:", e);
+                }
+              }
+
+              if (v && typeof v === "object" && v.penalties_applied) {
+                try {
+                  const penalties = Object.entries(v.penalties_applied)
+                    .map(([field, data]) => `${field}: ${data.penalty}`)
+                    .join(", ");
+                  summary += ` | Penalties: ${penalties}`;
+                } catch (e) {
+                  console.log("Error processing penalties:", e);
+                }
+              }
+
+              if (v && typeof v === "object" && v.base_score !== undefined) {
+                summary += ` | Base: ${v.base_score}`;
+              }
+
+              if (v && typeof v === "object" && v.final_score !== undefined) {
+                summary += ` | Final: ${v.final_score}`;
+              }
+
+              // Set the content - no truncation
+              if (summary) {
+                td.textContent = summary;
+              } else {
+                // Fallback: show a simple representation
+                td.textContent = `Score: ${
+                  v.final_score || v.base_score || "N/A"
+                }`;
+              }
+
+              td.title = JSON.stringify(v, null, 2); // Show formatted JSON on hover
+            } else if (k === "length" && v && v !== "") {
+              try {
+                const parsed = JSON.parse(v);
+                const summary = `${parsed.chars || "N/A"} chars, ~${
+                  parsed.approx_tokens || "N/A"
+                } tokens`;
+                td.textContent = summary;
+                td.title = v;
+              } catch (e) {
+                td.textContent = v;
+              }
+            } else if (k === "included_urls" && v && v !== "") {
+              try {
+                const parsed = JSON.parse(v);
+                const summary = `${parsed.length || 0} URLs`;
+                td.textContent = summary;
+                td.title = v;
+              } catch (e) {
+                td.textContent = v;
+              }
+            } else if (k === "html_keywords_found" && v && v !== "") {
+              try {
+                const parsed = JSON.parse(v);
+                const summary = `${parsed.length || 0} keywords`;
+                td.textContent = summary;
+                td.title = v;
+              } catch (e) {
+                td.textContent = v;
+              }
+            } else if (k === "Clay score" && v && v !== "") {
+              td.textContent = v;
+              const score = parseInt(v);
+              if (score >= 80) {
+                td.style.color = "#059669";
+                td.style.fontWeight = "bold";
+              } else if (score >= 60) {
+                td.style.color = "#d97706";
+              } else if (score > 0) {
+                td.style.color = "#dc2626";
+              }
+            } else if (k === "final_score" && v && v !== "") {
+              td.textContent = v;
+              const score = parseInt(v);
+              if (score >= 80) {
+                td.style.color = "#059669";
+                td.style.fontWeight = "bold";
+              } else if (score >= 60) {
+                td.style.color = "#d97706";
+              } else if (score > 0) {
+                td.style.color = "#dc2626";
+              }
+            } else {
+              // Show all content without truncation
+              td.textContent = v;
+            }
+
+            tr.appendChild(td);
+          }
+
+          frag.appendChild(tr);
+          shown++;
+        }
+
+        els.tbody.innerHTML = "";
+        els.tbody.appendChild(frag);
+        setStatus(`${shown} domain(s) shown`);
+      }
+
+      async function loadFromWorkspace() {
+        setStatus("Loading workspace file…");
+        try {
+          const response = await fetch(DATA_FILE, { cache: "no-store" });
+          if (!response.ok) throw new Error("Fetch failed");
+          const text = await response.text();
+          const rows = parseJsonl(text);
+          renderTable(rows);
+          els.fallback.style.display = "none";
+        } catch (err) {
+          setStatus("Auto-load failed. Use manual file chooser below.");
+          els.fallback.style.display = "flex";
+        }
+      }
+
+      function readFile(file) {
+        return new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onerror = () => reject(fr.error);
+          fr.onload = () => resolve(String(fr.result || ""));
+          fr.readAsText(file);
+        });
+      }
+
+      async function loadFromInputs() {
+        const file = els.fileInput.files && els.fileInput.files[0];
+        if (!file) {
+          setStatus("Please select a file.");
+          return;
+        }
+        setStatus("Reading selected file…");
+        try {
+          const text = await readFile(file);
+          const rows = parseJsonl(text);
+          renderTable(rows);
+          setStatus("Loaded from selected file");
+        } catch (e) {
+          setStatus("Failed to read selected file");
+        }
+      }
+
+      // Events
+      els.reload.addEventListener("click", loadFromWorkspace);
+      els.loadFilesBtn.addEventListener("click", loadFromInputs);
+      els.compactToggle.addEventListener("click", () => {
+        const table = document.getElementById("resultTable");
+        table.classList.toggle("compact-mode");
+        const isCompact = table.classList.contains("compact-mode");
+        els.compactToggle.textContent = isCompact
+          ? "Normal Mode"
+          : "Toggle Compact Mode";
+      });
+      els.filter.addEventListener("input", () => {
+        const q = els.filter.value.trim().toLowerCase();
+        for (const tr of els.tbody.querySelectorAll("tr")) {
+          const domain = (tr.firstChild.textContent || "").toLowerCase();
+          tr.style.display = !q || domain.includes(q) ? "" : "none";
+        }
+        const visible = Array.from(els.tbody.querySelectorAll("tr")).filter(
+          (tr) => tr.style.display !== "none"
+        ).length;
+        setStatus(`${visible} domain(s) shown`);
+      });
+
+      // Initial attempt
+      loadFromWorkspace();
+    </script>
+  </body>
+</html>
