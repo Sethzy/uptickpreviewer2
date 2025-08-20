@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>
-        ICP Crawl Data Viewer (simple_crawl_20250820_053202_enriched_scored.jsonl)
-      </title>
+    <title>
+      ICP Crawl Data Viewer (simple_crawl_20250820_053202_enriched_scored.jsonl)
+    </title>
     <style>
       :root {
         --col-gap: 12px;
@@ -176,6 +176,10 @@
         min-width: 80px;
         max-width: 100px;
       }
+      .col-full_list_of_services_offered {
+        min-width: 200px;
+        max-width: 300px;
+      }
       .col-association {
         min-width: 80px;
         max-width: 100px;
@@ -307,9 +311,10 @@
         >
         <span>= New AI Scoring</span>
       </div>
-      Shows selected fields from simple_crawl_20250820_053202_enriched_scored.jsonl<br />
+      Shows selected fields from
+      simple_crawl_20250820_053202_enriched_scored.jsonl<br />
       <small
-        >Table is scrollable horizontally to view all columns • Total: 21
+        >Table is scrollable horizontally to view all columns • Total: 22
         columns • Use Compact Mode for better space utilization • Click ▶ to
         expand rows</small
       >
@@ -321,6 +326,9 @@
         >Filter domain:
         <input type="text" id="filterInput" placeholder="e.g. example.com"
       /></label>
+      <label>
+        <input type="checkbox" id="sortFinalDesc" /> Sort by final_score desc
+      </label>
       <span class="status" id="status"></span>
     </div>
     <div class="fallback" id="fallbackInputs">
@@ -385,6 +393,9 @@
             <th class="col-competitor_software ai-scoring-header">
               using_competitor_software
             </th>
+            <th class="col-full_list_of_services_offered ai-scoring-header">
+              full_list_of_services_offered
+            </th>
             <th class="col-association ai-scoring-header">
               part_of_known_fire_protection_association
             </th>
@@ -414,6 +425,7 @@
         "has_multiple_service_territories",
         "has_parent_company",
         "using_competitor_software",
+        "full_list_of_services_offered",
         "part_of_known_fire_protection_association",
       ];
 
@@ -426,7 +438,11 @@
         fallback: document.getElementById("fallbackInputs"),
         fileInput: document.getElementById("fileInput"),
         loadFilesBtn: document.getElementById("loadFilesBtn"),
+        sortFinalDesc: document.getElementById("sortFinalDesc"),
       };
+
+      // Keep the last loaded rows in memory for re-rendering
+      let loadedRows = [];
 
       function setStatus(msg) {
         els.status.textContent = msg;
@@ -489,8 +505,24 @@
         const filter = els.filter.value.trim().toLowerCase();
         const frag = document.createDocumentFragment();
 
+        // Optionally sort by final_score descending
+        let rowsToRender = rows.slice();
+        if (els.sortFinalDesc && els.sortFinalDesc.checked) {
+          rowsToRender.sort((a, b) => {
+            const av =
+              typeof a.final_score === "number"
+                ? a.final_score
+                : parseFloat(a.final_score || 0);
+            const bv =
+              typeof b.final_score === "number"
+                ? b.final_score
+                : parseFloat(b.final_score || 0);
+            return (isNaN(bv) ? 0 : bv) - (isNaN(av) ? 0 : av);
+          });
+        }
+
         let shown = 0;
-        for (const row of rows) {
+        for (const row of rowsToRender) {
           const domain = row && row.domain;
           if (!domain) continue;
 
@@ -629,14 +661,51 @@
               }
             } else if (k === "final_score" && v && v !== "") {
               td.textContent = v;
-              const score = parseInt(v);
-              if (score >= 80) {
-                td.style.color = "#059669";
-                td.style.fontWeight = "bold";
-              } else if (score >= 60) {
-                td.style.color = "#d97706";
-              } else if (score > 0) {
-                td.style.color = "#dc2626";
+              const score = typeof v === "number" ? v : parseFloat(v);
+              let color = "#6b7280"; // default muted
+              let weight = "normal";
+              let tier = "";
+              let desc = "";
+
+              if (!isNaN(score)) {
+                if (score >= 86) {
+                  color = "#065f46"; // Elite Tier - emerald-800
+                  weight = "bold";
+                  tier = "Elite Tier";
+                  desc =
+                    "Ideal companies with stable recurring revenue, strong credentials, multi-territory presence, and industry leadership";
+                } else if (score >= 75) {
+                  color = "#059669"; // High Tier - green-600
+                  weight = "bold";
+                  tier = "High Tier";
+                  desc =
+                    "Strong companies with good business models, professional operations, and market presence";
+                } else if (score >= 60) {
+                  color = "#d97706"; // Mid Tier - amber-600
+                  tier = "Mid Tier";
+                  desc =
+                    "Solid companies with established operations and moderate growth potential";
+                } else if (score >= 45) {
+                  color = "#b45309"; // Basic Tier - orange-700
+                  tier = "Basic Tier";
+                  desc = "Functional companies with limited scope or resources";
+                } else if (score >= 0) {
+                  color = "#dc2626"; // Risk Tier - red-600
+                  tier = "Risk Tier";
+                  desc =
+                    "Companies with unknown business models, limited credentials, or operational constraints";
+                } else {
+                  color = "#6b7280"; // Penalty Tier - gray-500
+                  tier = "Penalty Tier";
+                  desc =
+                    "Companies with significant negative factors (non-fire protection focus, corporate backing, etc.)";
+                }
+              }
+
+              td.style.color = color;
+              td.style.fontWeight = weight;
+              if (tier) {
+                td.title = `${tier}: ${desc}`;
               }
             } else {
               // Show all content without truncation
@@ -662,7 +731,8 @@
           if (!response.ok) throw new Error("Fetch failed");
           const text = await response.text();
           const rows = parseJsonl(text);
-          renderTable(rows);
+          loadedRows = rows;
+          renderTable(loadedRows);
           els.fallback.style.display = "none";
         } catch (err) {
           setStatus("Auto-load failed. Use manual file chooser below.");
@@ -689,7 +759,8 @@
         try {
           const text = await readFile(file);
           const rows = parseJsonl(text);
-          renderTable(rows);
+          loadedRows = rows;
+          renderTable(loadedRows);
           setStatus("Loaded from selected file");
         } catch (e) {
           setStatus("Failed to read selected file");
@@ -699,6 +770,13 @@
       // Events
       els.reload.addEventListener("click", loadFromWorkspace);
       els.loadFilesBtn.addEventListener("click", loadFromInputs);
+      if (els.sortFinalDesc) {
+        els.sortFinalDesc.addEventListener("change", () => {
+          if (loadedRows && loadedRows.length) {
+            renderTable(loadedRows);
+          }
+        });
+      }
       els.compactToggle.addEventListener("click", () => {
         const table = document.getElementById("resultTable");
         table.classList.toggle("compact-mode");
