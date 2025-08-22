@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>
-      ICP Crawl Data Viewer (simple_crawl_20250820_053202_enriched_scored.jsonl)
+      ICP Crawl Data Viewer
+      (v4-simple_crawl_20250820_053202_enriched_scored.jsonl)
     </title>
     <style>
       :root {
@@ -184,6 +185,18 @@
         min-width: 80px;
         max-width: 100px;
       }
+      .col-employee_count {
+        min-width: 80px;
+        max-width: 100px;
+      }
+      .col-pic_1_contact_info {
+        min-width: 150px;
+        max-width: 200px;
+      }
+      .col-pic_2_contact_info {
+        min-width: 150px;
+        max-width: 200px;
+      }
       .col-final_score {
         min-width: 80px;
         max-width: 100px;
@@ -312,9 +325,9 @@
         <span>= New AI Scoring</span>
       </div>
       Shows selected fields from
-      simple_crawl_20250820_053202_enriched_scored.jsonl<br />
+      v4-simple_crawl_20250820_053202_enriched_scored.jsonl<br />
       <small
-        >Table is scrollable horizontally to view all columns • Total: 22
+        >Table is scrollable horizontally to view all columns • Total: 25
         columns • Use Compact Mode for better space utilization • Click ▶ to
         expand rows</small
       >
@@ -399,6 +412,13 @@
             <th class="col-association ai-scoring-header">
               part_of_known_fire_protection_association
             </th>
+            <th class="col-employee_count ai-scoring-header">Employee Count</th>
+            <th class="col-pic_1_contact_info ai-scoring-header">
+              PIC 1 Contact Info
+            </th>
+            <th class="col-pic_2_contact_info ai-scoring-header">
+              PIC 2 Contact Info
+            </th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -406,7 +426,7 @@
     </div>
 
     <script>
-      const DATA_FILE = "simple_crawl_20250820_053202_enriched_scored.jsonl";
+      const DATA_FILE = "v4-simple_crawl_20250820_053202_enriched_scored.jsonl";
       const KEYS = [
         "Lead Status",
         "Clay score",
@@ -427,6 +447,9 @@
         "using_competitor_software",
         "full_list_of_services_offered",
         "part_of_known_fire_protection_association",
+        "Employee Count",
+        "PIC 1 Contact Info",
+        "PIC 2 Contact Info",
       ];
 
       const els = {
